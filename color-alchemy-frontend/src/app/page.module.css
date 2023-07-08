@@ -1,0 +1,70 @@
+.gameDataDynamicRow {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.tile {
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+    border-width: 2px;
+    border-color: lightgray;
+    border-style: solid;
+    cursor: pointer;
+}
+
+.targetTile {
+    margin-left: 10px;
+}
+
+.closestTile {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.source {
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    border-width: 2px;
+    border-color: lightgray;
+    border-style: solid;
+}
+
+.transparentTile {
+    width: 20px;
+    height: 20px;
+    background-color: 'transparent';
+    border-radius: '50%';
+    border-width: 2px;
+    border-color: 'transparent';
+    border-style: 'solid',
+}
+
+.tooltip {
+    position: relative;
+    /* display: inline-block; */
+    /* border-bottom: 1px dotted black; */
+    /* If you want dots under the hoverable text */
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    background-color: lightgrey;
+    color: black;
+    text-align: center;
+    padding: 5px;
+    border-radius: 6px;
+    box-shadow: black;
+    /* Position the tooltip text - see examples below! */
+    position: absolute;
+    z-index: 1;
+    font-size: 12px;
+    left: 20px;
+    filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.44));
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+}
