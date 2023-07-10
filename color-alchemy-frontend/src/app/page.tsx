@@ -5,9 +5,11 @@ import styles from './page.module.css'
 import axios from 'axios'
 import { useEffect, useState } from 'react'
 import { GameData } from '@/model/GameData'
+import Tile from './components/tile/tile'
+
+export const initialColor = [0, 0, 0];//black color is the inital color for all tile and circle
 
 export default function Home() {
-	const initialColor = [0, 0, 0];//black color is the inital color for all tile and circle
 	const numOfSourceRow = 2;
 	const numOfSourceColumn = 2;
 	const winCondition = 10;
@@ -30,19 +32,28 @@ export default function Home() {
 	useEffect(() => {
 		if (matrixColor != undefined && gameData.target != null)
 			calculateClosestColor(matrixColor);
-	}, [matrixColor, gameData, sourcesNum])
+	}, [matrixColor, gameData, sourcesNum, userMoved])
 
 	useEffect(() => { //end game logic
-		if (userMoved >= gameData.maxMoves || userHasWin) {
-			setShouldEndGame(true);
-		} else {
-			setShouldEndGame(false);
-		}
+		if (gameData?.maxMoves > 0)
+			if (userMoved >= gameData?.maxMoves || userHasWin) {
+				setShouldEndGame(true);
+				if (!userHasWin) {
+					if (confirm('Sorry, you have lost! \nDo you want to play again?') == true) { //dup can make a func
+						initGameAPI();
+					}
+				}
+			} else {
+				setShouldEndGame(false);
+			}
 	}, [userMoved, gameData])
 
 	useEffect(() => {
 		if (closestColorData.percentage < winCondition) {
 			setUserHasWin(true);
+			if (confirm('Congraulation, you have won! \nDo you want to play again?') == true) { //dup can make a func
+				initGameAPI();
+			}
 		} else {
 			setUserHasWin(false);
 		}
@@ -73,17 +84,22 @@ export default function Home() {
 	const calculateClosestColor = (matrixColor: [][]) => {
 		let result = closestColorData;
 		for (let width = 0; width < matrixColor?.length; width++) {
-			for (let height = 0; height < matrixColor[width].length; height++) {
-				let tempResult =
-					1 / 255 * 1 / Math.sqrt(3) * Math.sqrt(Math.pow((gameData?.target?.[0] - matrixColor[width][height][0]), 2) + Math.pow((gameData?.target?.[1] - matrixColor[width][height][1]), 2) + Math.pow((gameData?.target?.[2] - matrixColor[width][height][2]), 2)); // the delta calculation
-				tempResult = tempResult * 100 //convert to percentage
-				tempResult = Math.round(tempResult * 100) / 100;//round to 2 dp
-				if (tempResult < result.percentage) { //if it is less than the existing result, replace it
-					result.percentage = tempResult;
-					result.color = matrixColor[width][height];
+			if (width !== 0 && width !== matrixColor.length - 1) { //skip the first and last line, as it is the top and bottom source
+				for (let height = 0; height < matrixColor[width].length; height++) {
+					// if(height !== 0 && he)
+					let tempResult =
+						1 / 255 * 1 / Math.sqrt(3) * Math.sqrt(
+							Math.pow((gameData?.target?.[0] - matrixColor[width][height][0]), 2) +
+							Math.pow((gameData?.target?.[1] - matrixColor[width][height][1]), 2) +
+							Math.pow((gameData?.target?.[2] - matrixColor[width][height][2]), 2)
+						); // the delta calculation
+					tempResult = tempResult * 100 //convert to percentage
+					tempResult = Math.round(tempResult * 100) / 100;//round to 2 dp
+					if (tempResult < result.percentage) { //if it is less than the existing result, replace it
+						result.percentage = tempResult;
+						result.color = matrixColor[width][height];
+					}
 				}
-				console.log(tempResult);
-
 			}
 		}
 
@@ -92,7 +108,7 @@ export default function Home() {
 
 	const setSources = (sourceIndex: { x: number, y: number }) => {
 		if (sourcesNum < 3) {
-			let temp = matrixColor;
+			let temp = [...matrixColor];
 			switch (sourcesNum) {
 				case 0:
 					temp[sourceIndex.x][sourceIndex.y] = { color: [255, 0, 0], shined: true };
@@ -106,25 +122,17 @@ export default function Home() {
 				default:
 					break;
 			}
+			console.log(sourceIndex);
+
 			setMatrixColor(temp);
 			setSourcesNum(sourcesNum + 1);
-		}
-	}
-
-	const tileColorDetermined = () => {
-
-	}
-
-	const isMultipleShined = (tile: { x: number, y: number }) => {
-		if (matrixColor[0][y].shined) {
-
+			setUserMoved(userMoved + 1);
 		}
 	}
 
 	return (
 		<div>
 			<h3>RGB Alchemy</h3>
-			<button onClick={initGameAPI}>Replay</button>
 			<p>User ID: {gameData?.userId}</p>
 			<p>Moves left: {gameData?.maxMoves - userMoved}</p>
 			<div className={styles.gameDataDynamicRow}>Target color:
@@ -146,36 +154,41 @@ export default function Home() {
 				{
 					matrixColor?.map((item, index: number) => {
 						return (
-							<>
-								<div>
-									{
-										item.map((i, index2) => {
-											if ((index == 0 && index2 == 0) || (index == matrixColor.length - 1 && index2 == 0) || (index == 0 && index2 == item.length - 1) || (index == matrixColor.length - 1 && index2 == item.length - 1)) {
+
+							<div
+								key={index}>
+								{
+									item.map((i, index2) => {
+										if ((index == 0 && index2 == 0) || (index == matrixColor.length - 1 && index2 == 0) || (index == 0 && index2 == item.length - 1) || (index == matrixColor.length - 1 && index2 == item.length - 1)) {
+											return (
+												<div
+													key={index + index2 + 'tSource'}
+													className={styles.transparentTile} />)
+										} else {
+											if (index == 0 || index == matrixColor.length - 1 || index2 == 0 || index2 == item.length - 1) {
 												return (
-													<div className={styles.transparentTile} />)
+													<div
+														key={index + index2 + 'source'}
+														onClick={() => setSources({ x: index, y: index2 })}
+														className={styles.source}
+														style={{
+															backgroundColor: `rgb(${i?.color.toString()})`
+														}} />
+												)
 											} else {
-												if (index == 0 || index == matrixColor.length - 1 || index2 == 0 || index2 == item.length - 1) {
-													return (
-														<div
-															draggable="true" onDrag={() => { }}
-															onClick={() => setSources({ x: index, y: index2 })}
-															className={styles.source}
-															style={{
-																backgroundColor: `rgb(${i?.color.toString()})`
-															}} />
-													)
-												} else {
-													return (
-														<div className={styles.tile + ' ' + styles.tooltip} style={{ backgroundColor: `rgb(${i?.color.toString()})` }} >
-															<span className={styles.tooltiptext}>{i?.color.toString()}</span>
-														</div>
-													)
-												}
+												return (
+													<Tile
+														key={index + index2 + 'tile'}
+														position={{ x: index, y: index2 }}
+														matrixColor={matrixColor}
+														gameData={gameData} />
+												)
 											}
-										})
-									}
-								</div>
-							</>
+										}
+									})
+								}
+							</div>
+
 						)
 					})
 				}
