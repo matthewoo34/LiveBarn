@@ -172,7 +172,8 @@ export default function Home() {
 														onClick={() => setSources({ x: index, y: index2 })}
 														className={styles.source}
 														style={{
-															backgroundColor: `rgb(${i?.color.toString()})`
+															backgroundColor: `rgb(${i?.color.toString()})`,
+															cursor: sourcesNum < 3 ? 'pointer' : 'auto'
 														}} />
 												)
 											} else {
