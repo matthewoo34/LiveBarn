@@ -5,17 +5,25 @@ import styles from '../../page.module.css'
 import axios from 'axios'
 import { useEffect, useState } from 'react'
 import { GameData } from '@/model/GameData'
-import { initialColor } from '@/app/page'
 
 interface tileProps {
     position: { x: number, y: number };
     matrixColor: any[][];
+    userMoved: number;
     gameData: GameData;
+    updateMatrixColor: (tileDetail: { pos: { x: number, y: number }, color: number[] }) => void;
+    initialColor: number[];
+    item: any;
+    closestColorData: any; //need better typing
+}
+
+interface tileProps {
+    initialColor: number[];
 }
 
 export default function Tile(props: tileProps) {
     const [shinedBySource, setShinedBySource] = useState([null, null, null, null]);//store all four direction shined info, default null
-    const [color, setColor] = useState(initialColor);
+    const [color, setColor] = useState(props.initialColor);
     enum direction {
         TOP = 0,
         RIGHT = 1,
@@ -31,15 +39,21 @@ export default function Tile(props: tileProps) {
 
 
     useEffect(() => {
-        isMultipleShined(props.position);
-    }, [props.matrixColor])
+        if (props.position != undefined)
+            isMultipleShined(props.position);
+    }, [props.userMoved])
 
     useEffect(() => {
-        // if (shinedBySource.every(element => element != null))
         mixingAffectedColor(shinedBySource);
     }, [shinedBySource])
 
+    useEffect(() => {
+        props.updateMatrixColor({ pos: props.position, color: color });
+    }, [color])
+
     const mixingAffectedColor = (sources: any[]) => {
+        console.log('mixing');
+
         let allColor = [];
         let overallColor = [0, 0, 0];
         let normFactor = 0;
@@ -57,7 +71,7 @@ export default function Tile(props: tileProps) {
 
         normFactor = calculateNormFactor(overallColor);
         for (let index = 0; index < overallColor.length; index++) {
-            overallColor[index] = overallColor[index] * normFactor;
+            overallColor[index] = Math.round(overallColor[index] * normFactor);
         }
 
         setColor(overallColor);
@@ -107,15 +121,10 @@ export default function Tile(props: tileProps) {
             temp[direction.LEFT] = { ...leftSource, distance: pos.x - 0 };
         }
         if (rightSource?.shined) {//the right source of the tile is shined
-            console.log(matrix[matrix.length - 1]);
-
             temp[direction.RIGHT] = { ...rightSource, distance: (matrix.length - 1) - pos.x };
         }
         if (bottomSource?.shined) {//the bottom source of the tile is shined
-
-            temp[direction.BOTTOM] = {
-                ...bottomSource, distance: (matrix[0].length) - pos.y
-            };
+            temp[direction.BOTTOM] = { ...bottomSource, distance: (matrix[0].length) - pos.y };
         }
         setShinedBySource(temp);
     }
@@ -125,7 +134,8 @@ export default function Tile(props: tileProps) {
         <div
             className={styles.tile + ' ' + styles.tooltip}
             style={{
-                backgroundColor: `rgb(${color.toString()})`
+                backgroundColor: `rgb(${color.toString()})`,
+                borderColor: props.closestColorData.position.x == props.position.x && props.closestColorData.position.y == props.position.y ? 'red' : 'lightgrey'
             }} >
             <span
                 className={styles.tooltiptext}>
