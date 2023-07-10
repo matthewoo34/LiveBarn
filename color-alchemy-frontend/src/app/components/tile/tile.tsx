@@ -97,8 +97,7 @@ export default function Tile(props: tileProps) {
         let topSource = matrix[pos.x][0];
         let leftSource = matrix[0][pos.y];
         let rightSource = matrix[matrix.length - 1][pos.y];
-        let bottomSource = matrix[pos.x][matrix[0].length];
-
+        let bottomSource = matrix[pos.x][matrix[0].length - 1];
 
         if (topSource?.shined) { //the top source of the tile is shined
             temp[direction.TOP] = { ...topSource, distance: pos.y - 0 }; //need to replace the array content, rather than push, else it will insert unwanted data
@@ -110,10 +109,13 @@ export default function Tile(props: tileProps) {
         if (rightSource?.shined) {//the right source of the tile is shined
             console.log(matrix[matrix.length - 1]);
 
-            temp[direction.RIGHT] = { ...rightSource, distance: matrix.length - 1 - pos.x };
+            temp[direction.RIGHT] = { ...rightSource, distance: (matrix.length - 1) - pos.x };
         }
         if (bottomSource?.shined) {//the bottom source of the tile is shined
-            temp[direction.BOTTOM] = { ...bottomSource, distance: matrix[0].length - pos.y };
+
+            temp[direction.BOTTOM] = {
+                ...bottomSource, distance: (matrix[0].length) - pos.y
+            };
         }
         setShinedBySource(temp);
     }
