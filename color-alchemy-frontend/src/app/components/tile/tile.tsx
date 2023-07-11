@@ -1,145 +1,147 @@
 'use client'
 
-import Image from 'next/image'
 import styles from '../../page.module.css'
-import axios from 'axios'
 import { useEffect, useState } from 'react'
 import { GameData } from '@/model/GameData'
+import { TileData } from '@/model/TileData';
+import { numOfDefaultSourceColor } from '@/app/page';
 
 interface tileProps {
     position: { x: number, y: number };
-    matrixColor: any[][];
+    matrixColor: TileData[][];
     userMoved: number;
     gameData: GameData;
     updateMatrixColor: (tileDetail: { pos: { x: number, y: number }, color: number[] }) => void;
     initialColor: number[];
     item: any;
     closestColorData: any; //need better typing
-    onDragStart: () => void;
 }
 
-interface tileProps {
-    initialColor: number[];
+enum Direction {
+    TOP = 0,
+    RIGHT = 1,
+    BOTTOM = 2,
+    LEFT = 3,
+}
+
+enum ColorCode {
+    RED = 0,
+    GREEN = 1,
+    BLUE = 2,
 }
 
 export default function Tile(props: tileProps) {
-    const [shinedBySource, setShinedBySource] = useState([null, null, null, null]);//store all four direction shined info, default null
-    const [color, setColor] = useState(props.initialColor);
-    enum direction {
-        TOP = 0,
-        RIGHT = 1,
-        BOTTOM = 2,
-        LEFT = 3,
-    }
+    const { position, matrixColor, userMoved, gameData, updateMatrixColor, initialColor, closestColorData } = props;
+    const { width, height } = gameData;
 
-    enum colorCode {
-        RED = 0,
-        GREEN = 1,
-        BLUE = 2,
-    }
-
+    const [shinedBySource, setShinedBySource] = useState<any[]>([null, null, null, null]);//store all four direction shined info, default null
+    const [color, setColor] = useState<number[]>(initialColor); //store the tile color
 
     useEffect(() => {
-        if (props.position != undefined)
-            isMultipleShined(props.position);
+        if (position != undefined)
+            isMultipleShined(position);
     }, [props.userMoved])
 
     useEffect(() => {
-        mixingAffectedColor(shinedBySource);
+        const overallColor = calculateMixedColor(shinedBySource);
+        setColor(overallColor);
     }, [shinedBySource])
 
     useEffect(() => {
-        props.updateMatrixColor({ pos: props.position, color: color });
+        updateMatrixColor({ pos: position, color: color });
     }, [color])
 
-    const mixingAffectedColor = (sources: any[]) => {
-        console.log('mixing');
-
-        let allColor = [];
+    const calculateMixedColor = (sources: any[]) => {
         let overallColor = [0, 0, 0];
         let normFactor = 0;
+
         sources.forEach((source, index) => {
-            allColor.push(tileColorCalculation(source, index));
+            if (source) {
+                const result = colorFormula(source, index);
+                if (result) {
+                    overallColor[ColorCode.RED] += result[ColorCode.RED];
+                    overallColor[ColorCode.GREEN] += result[ColorCode.GREEN];
+                    overallColor[ColorCode.BLUE] += result[ColorCode.BLUE];
+                }
+            }
         });
 
-        for (let index = 0; index < allColor.length; index++) {
-            if (allColor[index] !== undefined) {
-                overallColor[colorCode.RED] = overallColor[colorCode.RED] + allColor?.[index]?.[colorCode.RED];
-                overallColor[colorCode.GREEN] = overallColor[colorCode.GREEN] + allColor?.[index]?.[colorCode.GREEN];
-                overallColor[colorCode.BLUE] = overallColor[colorCode.BLUE] + allColor?.[index]?.[colorCode.BLUE];
-            }
-        }
-
         normFactor = calculateNormFactor(overallColor);
-        for (let index = 0; index < overallColor.length; index++) {
-            overallColor[index] = Math.round(overallColor[index] * normFactor);
+
+        return overallColor.map((color) => Math.round(color * normFactor));
+    };
+
+    const colorFormula = (source: any, index: Direction) => {
+        const { color, distance } = source;
+        let multiplier = 1;
+
+        if (distance === undefined) {
+            return;
         }
 
-        setColor(overallColor);
-    }
-
-    const tileColorCalculation = (source: any, index: direction) => {
-        return colorFormula(props.gameData, source, index);
-    }
-
-    const colorFormula = (gameData: GameData, source: any, index: direction) => {
-        let multiplier = 1;
         switch (index) {
-            case direction.TOP:
-            case direction.BOTTOM:
-                multiplier = (gameData?.height + 1 - source?.distance) / (gameData?.height + 1)
+            case Direction.TOP:
+            case Direction.BOTTOM:
+                multiplier = (height + 1 - distance) / (height + 1);
                 break;
-            case direction.LEFT:
-            case direction.RIGHT:
-                multiplier = (gameData?.width + 1 - source?.distance) / (gameData?.width + 1)
-
+            case Direction.LEFT:
+            case Direction.RIGHT:
+                multiplier = (width + 1 - distance) / (width + 1);
                 break;
             default:
                 break;
         }
-        const result = source?.color?.map((x: number) => x * multiplier); //each color times the multipler
-        return result;
+
+        return color.map((x: number) => x * multiplier);
     }
 
-    const calculateNormFactor = (overallColor: colorCode[]) => {
-        return 255 / Math.max(overallColor[colorCode.RED], overallColor[colorCode.GREEN], overallColor[colorCode.BLUE], 255);
+    const calculateNormFactor = (overallColor: ColorCode[]) => {
+        return 255 / Math.max(overallColor[ColorCode.RED], overallColor[ColorCode.GREEN], overallColor[ColorCode.BLUE], 255);
     }
 
     const isMultipleShined = (tile: { x: number, y: number }) => {
         let temp = [...shinedBySource];
-        let matrix = props.matrixColor;
-        let pos = props.position;
-        let topSource = matrix[pos.x][0];
-        let leftSource = matrix[0][pos.y];
-        let rightSource = matrix[matrix.length - 1][pos.y];
-        let bottomSource = matrix[pos.x][matrix[0].length - 1];
+        let matrix = matrixColor;
+        let { x, y } = position;
+        let topSource = matrix[x][0];
+        let leftSource = matrix[0][y];
+        let rightSource = matrix[matrix.length - 1][y];
+        let bottomSource = matrix[x][matrix[0].length - 1];
 
         if (topSource?.shined) { //the top source of the tile is shined
-            temp[direction.TOP] = { ...topSource, distance: pos.y - 0 }; //need to replace the array content, rather than push, else it will insert unwanted data
+            temp[Direction.TOP] = { ...topSource, distance: y - 0 }; //need to replace the array content, rather than push, else it will insert unwanted data
         }
 
         if (leftSource?.shined) {//the left source of the tile is shined
-            temp[direction.LEFT] = { ...leftSource, distance: pos.x - 0 };
+            temp[Direction.LEFT] = { ...leftSource, distance: x - 0 };
         }
         if (rightSource?.shined) {//the right source of the tile is shined
-            temp[direction.RIGHT] = { ...rightSource, distance: (matrix.length - 1) - pos.x };
+            temp[Direction.RIGHT] = { ...rightSource, distance: (matrix.length - 1) - x };
         }
         if (bottomSource?.shined) {//the bottom source of the tile is shined
-            temp[direction.BOTTOM] = { ...bottomSource, distance: (matrix[0].length) - pos.y };
+            temp[Direction.BOTTOM] = { ...bottomSource, distance: (matrix[0].length) - y };
         }
         setShinedBySource(temp);
     }
 
+
+    const handleTileDragStart = (event: React.DragEvent<HTMLDivElement>, row: number, col: number) => {
+        // Store the dragged tile's color in the data transfer object
+        if (userMoved >= numOfDefaultSourceColor) { //disable the drag color before the user select the 3 colors
+            const tileColor = matrixColor[row][col].color;
+            event.dataTransfer.setData('text/plain', JSON.stringify(tileColor));
+        }
+    };
 
     return (
         <div
             className={styles.tile + ' ' + styles.tooltip}
             style={{
                 backgroundColor: `rgb(${color.toString()})`,
-                borderColor: props.closestColorData.position.x == props.position.x && props.closestColorData.position.y == props.position.y ? 'red' : 'lightgrey'
+                borderColor: closestColorData.position.x == position.x && closestColorData.position.y == position.y ? 'red' : 'lightgrey'
             }}
             draggable={true}
-            onDragStart={props.onDragStart}
+            onDragStart={(event) => handleTileDragStart(event, position.x, position.y)}
         >
             <span
                 className={styles.tooltiptext}>
