@@ -51,6 +51,7 @@ export default function Home() {
 		if (closestColorData.percentage < winCondition && userMoved <= gameData?.maxMoves) {
 			setUserHasWin(true);
 			if (confirm('Congraulation, you have won! \nDo you want to play again?') == true) { //dup can make a func
+				resetAllState();
 				initGameAPI();
 			}
 		} else {
@@ -82,8 +83,6 @@ export default function Home() {
 
 	const calculateClosestColor = (matrixColor: [][]) => {
 		let result = { ...closestColorData };
-		console.log(matrixColor);
-
 		for (let width = 1; width < matrixColor?.length - 1; width++) { //skip the first and last line, as it is the top and bottom source
 			for (let height = matrixColor[width].length - 2; height > 0; height--) {
 				//matrixColor[width][height].closest = false;
@@ -91,22 +90,8 @@ export default function Home() {
 					1 / 255 * 1 / Math.sqrt(3) * Math.sqrt(Math.pow((gameData?.target?.[0] - matrixColor[width][height].color?.[0]), 2) + Math.pow((gameData?.target?.[1] - matrixColor[width][height].color?.[1]), 2) + Math.pow((gameData?.target?.[2] - matrixColor[width][height].color?.[2]), 2)); // the delta calculation
 				tempResult = tempResult * 100 //convert to percentage
 				tempResult = Math.round(tempResult * 100) / 100;//round to 2 dp
-				console.log(
-					// Math.sqrt(
-					// Math.pow(
-					(
-						// gameData?.target?.[0] - 
-						matrixColor[width][height].color?.[0]
-					)
-					// , 2) +
-					// Math.pow((gameData?.target?.[1] - matrixColor[width][height].color?.[1]), 2) + 
-					// Math.pow((gameData?.target?.[2] - matrixColor[width][height].color?.[2]), 2)
-					// )
-				);
-				// console.log(matrixColor[width][height].color)
-				if (tempResult < result.percentage) { //if it is less than the existing result, replace it
-					//reset matrixColor closest
 
+				if (tempResult < result.percentage) { //if it is less than the existing result, replace it
 					result.percentage = tempResult;
 					result.color = matrixColor[width][height].color;
 					result.position = { x: width, y: height };
@@ -117,9 +102,9 @@ export default function Home() {
 		return setClosestColorData(result);
 	}
 
-	const setSources = (sourceIndex: { x: number, y: number }) => {
+	const setSources = (sourceIndex: { x: number, y: number }, color?: number[]) => {
+		const temp = [...matrixColor];
 		if (sourcesNum < 3) {
-			let temp = [...matrixColor];
 			switch (sourcesNum) {
 				case 0:
 					temp[sourceIndex.x][sourceIndex.y] = { color: [255, 0, 0], shined: true };
@@ -133,10 +118,16 @@ export default function Home() {
 				default:
 					break;
 			}
-			setMatrixColor(temp);
-			setSourcesNum(sourcesNum + 1);
-			setUserMoved(userMoved + 1);
+		} else {
+			const test = { ...temp[sourceIndex.x][sourceIndex.y] }
+			test.color = color;
+			test.shined = true;
+			temp[sourceIndex.x][sourceIndex.y] = test;
 		}
+
+		setMatrixColor(temp);
+		setSourcesNum(sourcesNum + 1);
+		setUserMoved(userMoved + 1);
 	}
 
 	const updateMatrixColor = async (tileDetail: { pos: { x: number, y: number }, color: number[] }) => {
@@ -151,6 +142,36 @@ export default function Home() {
 
 			return updatedTiles;
 		});
+	}
+
+
+	const handleTileDragStart = (row: number, col: number) => {
+		// Store the dragged tile's color in the data transfer object
+		const tileColor = matrixColor[row][col].color;
+		event.dataTransfer.setData('text/plain', JSON.stringify(tileColor));
+	};
+
+	const handleSourceDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+		// Allow dropping on the source
+		event.preventDefault();
+	};
+
+	const handleSourceDrop = (event: React.DragEvent<HTMLDivElement>, row: number, col: number) => {
+		// Get the dragged tile's color from the data transfer object
+		const tileColor = JSON.parse(event.dataTransfer.getData('text/plain'));
+
+		// Update the source color with the dragged tile's color
+		setSources({ x: row, y: col }, tileColor);
+	};
+
+	const resetAllState = () => {
+		setGameData(new GameData);
+		setUserMoved(0);
+		setMatrixColor(undefined);
+		setClosestColorData({ percentage: 100, color: initialColor, position: { x: 1, y: 1 } });
+		setShouldEndGame(false);
+		setUserHasWin(false);
+		setSourcesNum(0);
 	}
 
 	return (
@@ -207,7 +228,10 @@ export default function Home() {
 														style={{
 															backgroundColor: `rgb(${i?.color.toString()})`,
 															cursor: sourcesNum < 3 ? 'pointer' : 'auto'
-														}} />
+														}}
+														onDragOver={handleSourceDragOver}
+														onDrop={event => handleSourceDrop(event, index, index2)}
+													/>
 												)
 											} else {
 												return (
@@ -220,7 +244,9 @@ export default function Home() {
 														updateMatrixColor={updateMatrixColor}
 														userMoved={userMoved}
 														initialColor={initialColor}
-														item={i} />
+														item={i}
+														onDragStart={() => handleTileDragStart(index, index2)}
+													/>
 												)
 											}
 										}

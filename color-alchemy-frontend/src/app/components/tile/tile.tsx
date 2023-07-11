@@ -15,6 +15,7 @@ interface tileProps {
     initialColor: number[];
     item: any;
     closestColorData: any; //need better typing
+    onDragStart: () => void;
 }
 
 interface tileProps {
@@ -136,7 +137,10 @@ export default function Tile(props: tileProps) {
             style={{
                 backgroundColor: `rgb(${color.toString()})`,
                 borderColor: props.closestColorData.position.x == props.position.x && props.closestColorData.position.y == props.position.y ? 'red' : 'lightgrey'
-            }} >
+            }}
+            draggable={true}
+            onDragStart={props.onDragStart}
+        >
             <span
                 className={styles.tooltiptext}>
                 {color.toString()}
