@@ -4,6 +4,11 @@
     align-items: center;
 }
 
+.gamePlate {
+    display: flex;
+    flex-direction: 'row';
+}
+
 .tile {
     width: 20px;
     height: 20px;
@@ -35,11 +40,11 @@
 .transparentTile {
     width: 20px;
     height: 20px;
-    background-color: 'transparent';
-    border-radius: '50%';
+    background-color: transparent;
+    border-radius: 50%;
     border-width: 2px;
-    border-color: 'transparent';
-    border-style: 'solid',
+    border-color: transparent;
+    border-style: solid;
 }
 
 .tooltip {
