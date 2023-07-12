@@ -15,3 +15,9 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+The game is made with the assumption of :
+width is between 10 - 20,
+height is between 4-10,
+maxMoves is between 8-20,
+the first 3 rgb color must be set to 3 different sources, and only after that, dragging and dropping of tile to source is allowed
+
