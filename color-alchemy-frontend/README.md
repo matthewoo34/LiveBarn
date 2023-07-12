@@ -21,3 +21,6 @@ height is between 4-10,
 maxMoves is between 8-20,
 the first 3 rgb color must be set to 3 different sources, and only after that, dragging and dropping of tile to source is allowed
 
+This project is made by Man Hin, Woo (Matthew) 
+matthewoo16@gmail.com
+
