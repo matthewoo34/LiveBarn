@@ -110,9 +110,9 @@ export default function Game() {
 	}
 
 	const updateMatrixColor = async (tileDetail: { pos: { x: number, y: number }, color: number[] }) => {
-		setMatrixColor((prevTiles: TileData[][] | undefined) => {
+		setMatrixColor((prevTiles: TileData[][] = []) => {
 			// Create a copy of the previous tiles
-			const updatedTiles = [...prevTiles!];// Use non-null assertion operator (!) or add a null check
+			const updatedTiles = [...prevTiles];// Use non-null assertion operator (!) or add a null check
 			const clickedTile = { ...updatedTiles[tileDetail.pos.x][tileDetail.pos.y] };
 
 			// Update the clicked tile's color
@@ -149,6 +149,7 @@ export default function Game() {
 				className={styles.gameDataDynamicRow + ' ' + styles.tooltip}>
 				Target color:
 				<div
+					data-testid="target-color"
 					className={`${styles.tile}  ${styles.targetTile}`}
 					style={{ backgroundColor: `rgb(${target?.toString()})` }}>
 					<span
@@ -162,6 +163,7 @@ export default function Game() {
 				className={styles.gameDataDynamicRow}>
 				Closest color:
 				<div
+					data-testid="closest-color"
 					className={`${styles.tile} ${styles.closestTile} ${styles.tooltip}`}
 					style={{ backgroundColor: `rgb(${color?.toString()})` }}>
 					<span className={styles.tooltiptext}>{color?.toString()}</span>
@@ -188,9 +190,13 @@ export default function Game() {
 													key={col + row + 'tSource'}
 													className={styles.transparentTile} />)
 										} else {
-											if (col == 0 || col == matrixColor.length - 1 || row == 0 || row == item.length - 1) {
-												return (
+											if (col === 0 || //first col
+												col === matrixColor.length - 1 ||  //last col
+												row === 0 || //first row
+												row === item.length - 1) { //last row
+												return ( //should show the source
 													<Source
+														key={col + row + 'source'}
 														position={{ x: col, y: row }}
 														userMoved={userMoved}
 														matrixColor={matrixColor}
