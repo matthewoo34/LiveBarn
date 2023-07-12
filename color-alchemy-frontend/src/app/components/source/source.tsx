@@ -15,7 +15,7 @@ interface SourceProps {
 export default function Source(props: SourceProps) {
     const handleClickSource = (sourceIndex: { x: number, y: number }) => {
         const temp = [...props.matrixColor];
-        if (props.userMoved < numOfDefaultSourceColor) {
+        if (props.userMoved < numOfDefaultSourceColor && temp[sourceIndex.x][sourceIndex.y].shined !== true) { //ensure the player is within the first 3 clicks, and prevent the player from clicking the same source 3 times, which may damage the game flow for the player
             switch (props.userMoved) {
                 case 0:
                     temp[sourceIndex.x][sourceIndex.y] = { color: [255, 0, 0], shined: true };
@@ -64,10 +64,12 @@ export default function Source(props: SourceProps) {
             className={styles.source}
             style={{
                 backgroundColor: `rgb(${props.item?.color.toString()})`,
-                cursor: props.userMoved < numOfDefaultSourceColor ? 'pointer' : 'auto'
+                cursor: props.userMoved < numOfDefaultSourceColor ? 'pointer' : 'auto' //change the clickable cursor to normal cursor, once the 3 click of sources are done
             }}
+            id={`source-${props.position.x}-${props.position.y}`}
             onDragOver={handleSourceDragOver}
             onDrop={event => handleSourceDrop(event, props.position.x, props.position.y)}
+            data-testid={`source-${props.position.x}-${props.position.y}`}
         />
     )
 }
