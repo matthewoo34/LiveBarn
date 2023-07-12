@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
+    "dev": "npm test && next dev",
+    "build": "npm test && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
