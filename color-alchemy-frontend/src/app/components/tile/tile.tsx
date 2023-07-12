@@ -4,17 +4,18 @@ import styles from '../../page.module.css'
 import { useEffect, useState } from 'react'
 import { GameData } from '@/model/GameData'
 import { TileData } from '@/model/TileData';
-import { numOfDefaultSourceColor } from '@/app/page';
+import { ClosestColorData } from '@/model/ClosestColorData';
 
 interface tileProps {
     position: { x: number, y: number };
     matrixColor: TileData[][];
     userMoved: number;
     gameData: GameData;
-    updateMatrixColor: (tileDetail: { pos: { x: number, y: number }, color: number[] }) => void;
+    setMatrixColor: (matrixColor: TileData[][] | undefined) => void;
     initialColor: number[];
     item: any;
-    closestColorData: any; //need better typing
+    closestColorData: ClosestColorData;
+    numOfDefaultSourceColor: number;
 }
 
 enum Direction {
@@ -31,7 +32,7 @@ enum ColorCode {
 }
 
 export default function Tile(props: tileProps) {
-    const { position, matrixColor, userMoved, gameData, updateMatrixColor, initialColor, closestColorData } = props;
+    const { position, matrixColor, userMoved, gameData, setMatrixColor, initialColor, closestColorData, numOfDefaultSourceColor } = props;
     const { width, height } = gameData;
 
     const [shinedBySource, setShinedBySource] = useState<any[]>([null, null, null, null]);//store all four direction shined info, default null
@@ -40,7 +41,7 @@ export default function Tile(props: tileProps) {
     useEffect(() => {
         if (position != undefined)
             isMultipleShined(position);
-    }, [props.userMoved])
+    }, [userMoved])
 
     useEffect(() => {
         const overallColor = calculateMixedColor(shinedBySource);
@@ -133,15 +134,24 @@ export default function Tile(props: tileProps) {
         }
     };
 
+    const updateMatrixColor = (tileDetail: { pos: { x: number, y: number }, color: number[] }) => {
+        const temp = [...matrixColor];
+        const updateTile = { ...temp[tileDetail.pos.x][tileDetail.pos.y] }
+        updateTile.color = tileDetail.color;
+        temp[tileDetail.pos.x][tileDetail.pos.y] = updateTile;
+        setMatrixColor(temp);
+    }
+
     return (
         <div
             className={styles.tile + ' ' + styles.tooltip}
             style={{
                 backgroundColor: `rgb(${color.toString()})`,
-                borderColor: closestColorData.position.x == position.x && closestColorData.position.y == position.y ? 'red' : 'lightgrey'
+                borderColor: closestColorData.position.x === position.x && closestColorData.position.y === position.y ? 'red' : 'lightgrey'
             }}
             draggable={true}
             onDragStart={(event) => handleTileDragStart(event, position.x, position.y)}
+            data-testid={`tile-${position.x}-${position.y}`}
         >
             <span
                 className={styles.tooltiptext}>

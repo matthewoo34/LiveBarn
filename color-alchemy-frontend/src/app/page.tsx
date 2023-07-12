@@ -8,14 +8,14 @@ import Tile from './components/tile/tile'
 import Source from './components/source/source'
 import { TileData } from '@/model/TileData'
 import { ClosestColorData } from '@/model/ClosestColorData'
-
-export const numOfDefaultSourceColor = 3;
+import DisplayTile from './components/displayTile/displayTile'
 
 export default function Game() {
 	const numOfSourceRow = 2;
 	const numOfSourceColumn = 2;
 	const winCondition = 10;
 	const initialColor = [0, 0, 0];//black color is the inital color for all tile and circle
+	const numOfDefaultSourceColor = 3;
 
 	const [gameData, setGameData] = useState<GameData>(new GameData());
 	const [matrixColor, setMatrixColor] = useState<TileData[][] | undefined>();
@@ -26,39 +26,7 @@ export default function Game() {
 	const { target } = gameData;
 	const { color, percentage } = closestColorData;
 
-	useEffect(() => {
-		initGameAPI(); //initial point
-	}, [])
-
-	useEffect(() => {
-		if (gameData?.userId)
-			initMatrixColor(gameData); //rely on gameData to initial the matrix of color
-	}, [gameData])
-
-	useEffect(() => {
-		if (matrixColor != undefined && gameData.target != null)
-			calculateClosestColor(matrixColor); //calculate the closest, when matrixColor, gameData is present, and on each userMove
-	}, [matrixColor, gameData, userMoved])
-
-	useEffect(() => { //end game logic
-		if (gameData?.userId) // ensure the gameData is loaded, before checking
-			setShouldEndGame(userMoved >= gameData?.maxMoves || userHasWin);
-	}, [userMoved, gameData, userHasWin])
-
-	useEffect(() => {
-		if (closestColorData.percentage < winCondition && userMoved <= gameData?.maxMoves) {
-			setUserHasWin(true);
-		} else {
-			setUserHasWin(false);
-		}
-	}, [closestColorData, userMoved])
-
-	useEffect(() => {
-		if (shouldEndGame) {
-			handlePlayAgainConfirmation();
-		}
-	}, [shouldEndGame])
-
+	//..// Initial API
 	const initAPIDecider = (gameData: GameData) => { //need to see whether it is brand new user or existing user
 		let initApi = 'http://localhost:9876/init';
 		if (gameData.userId != '') {
@@ -80,14 +48,28 @@ export default function Game() {
 			});
 	};
 
+	useEffect(() => {
+		initGameAPI(); //initial point
+	}, [])
+
+	//..//
+
+	//..// Initializing matrix color
 	const initMatrixColor = useCallback((gameData: GameData) => {
 		const matrix = new Array(
 			gameData?.width + numOfSourceRow).fill({ color: initialColor, shined: false }).map(() =>
 				new Array(gameData?.height + numOfSourceColumn).fill({ color: initialColor, shined: false })
 			);
 		setMatrixColor(matrix);
-	}, [])
+	}, [numOfSourceRow, numOfSourceColumn])
 
+	useEffect(() => {
+		if (gameData?.userId)
+			initMatrixColor(gameData); //rely on gameData to initial the matrix of color
+	}, [gameData, initMatrixColor])
+	//..//
+
+	//..// calculate the closest color
 	const calculateClosestColor = (matrixColor: TileData[][]) => {
 		let result = { ...closestColorData };
 		for (let width = 1; width < matrixColor?.length - 1; width++) { //skip the first and last line, as it is the top and bottom source
@@ -109,18 +91,36 @@ export default function Game() {
 		return setClosestColorData(result);
 	}
 
-	const updateMatrixColor = async (tileDetail: { pos: { x: number, y: number }, color: number[] }) => {
-		setMatrixColor((prevTiles: TileData[][] = []) => {
-			// Create a copy of the previous tiles
-			const updatedTiles = [...prevTiles];// Use non-null assertion operator (!) or add a null check
-			const clickedTile = { ...updatedTiles[tileDetail.pos.x][tileDetail.pos.y] };
+	useEffect(() => {
+		if (matrixColor != undefined && gameData.target != null)
+			calculateClosestColor(matrixColor); //calculate the closest, when matrixColor, gameData is present, and on each userMove
+	}, [matrixColor, gameData, userMoved])
+	//..//
 
-			// Update the clicked tile's color
-			clickedTile.color = tileDetail.color;
-			updatedTiles[tileDetail.pos.x][tileDetail.pos.y] = clickedTile;
 
-			return updatedTiles;
-		});
+	useEffect(() => { //end game logic
+		if (gameData?.userId) // ensure the gameData is loaded, before checking
+			setShouldEndGame(userMoved >= gameData?.maxMoves || userHasWin);
+	}, [userMoved, gameData, userHasWin])
+
+	useEffect(() => {
+		if (closestColorData.percentage < winCondition && userMoved <= gameData?.maxMoves) {
+			setUserHasWin(true);
+		} else {
+			setUserHasWin(false);
+		}
+	}, [closestColorData, userMoved])
+
+
+
+	//..// handle play again
+	const resetAllState = () => {
+		setGameData(new GameData);
+		setUserMoved(0);
+		setMatrixColor(undefined);
+		setClosestColorData({ percentage: 100, color: initialColor, position: { x: 1, y: 1 } });
+		setShouldEndGame(false);
+		setUserHasWin(false);
 	}
 
 	const handlePlayAgainConfirmation = () => {
@@ -131,14 +131,12 @@ export default function Game() {
 		}
 	};
 
-	const resetAllState = () => {
-		setGameData(new GameData);
-		setUserMoved(0);
-		setMatrixColor(undefined);
-		setClosestColorData({ percentage: 100, color: initialColor, position: { x: 1, y: 1 } });
-		setShouldEndGame(false);
-		setUserHasWin(false);
-	}
+	useEffect(() => {
+		if (shouldEndGame) {
+			handlePlayAgainConfirmation();
+		}
+	}, [shouldEndGame])
+	//..//
 
 	return (
 		<div>
@@ -146,28 +144,21 @@ export default function Game() {
 			<p>User ID: {gameData?.userId}</p>
 			<p>Moves left: {gameData?.maxMoves - userMoved}</p>
 			<div
-				className={styles.gameDataDynamicRow + ' ' + styles.tooltip}>
+				className={styles.gameDataDynamicRow}>
 				Target color:
-				<div
-					data-testid="target-color"
-					className={`${styles.tile}  ${styles.targetTile}`}
-					style={{ backgroundColor: `rgb(${target?.toString()})` }}>
-					<span
-						className={styles.tooltiptext}>
-						{target?.toString()}
-					</span>
-				</div>
+				<DisplayTile
+					testid={"target-color"}
+					initialColor={target}
+					className={`${styles.tile}  ${styles.targetTile} ${styles.tooltip}`} />
 			</div>
 			<p></p>
 			<div
 				className={styles.gameDataDynamicRow}>
 				Closest color:
-				<div
-					data-testid="closest-color"
-					className={`${styles.tile} ${styles.closestTile} ${styles.tooltip}`}
-					style={{ backgroundColor: `rgb(${color?.toString()})` }}>
-					<span className={styles.tooltiptext}>{color?.toString()}</span>
-				</div>
+				<DisplayTile
+					testid={"closest-color"}
+					initialColor={color}
+					className={`${styles.tile} ${styles.closestTile} ${styles.tooltip}`} />
 				Δ = {percentage + '%'}
 			</div>
 			<p></p>
@@ -202,7 +193,8 @@ export default function Game() {
 														matrixColor={matrixColor}
 														setUserMoved={setUserMoved}
 														setMatrixColor={setMatrixColor}
-														item={i} />
+														item={i}
+														numOfDefaultSourceColor={numOfDefaultSourceColor} />
 												)
 											} else {
 												return (
@@ -212,10 +204,11 @@ export default function Game() {
 														matrixColor={matrixColor}
 														closestColorData={closestColorData}
 														gameData={gameData}
-														updateMatrixColor={updateMatrixColor}
+														setMatrixColor={setMatrixColor}
 														userMoved={userMoved}
 														initialColor={initialColor}
 														item={i}
+														numOfDefaultSourceColor={numOfDefaultSourceColor}
 													/>
 												)
 											}
