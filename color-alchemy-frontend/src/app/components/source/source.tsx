@@ -1,21 +1,22 @@
 import { TileData } from '@/model/TileData';
 import styles from '../../page.module.css'
-import { numOfDefaultSourceColor } from '@/app/page';
 
 interface SourceProps {
     position: { x: number, y: number };
     userMoved: number;
     matrixColor: TileData[][];
-    setUserMoved: (move: number) => any;
-    setMatrixColor: any;
+    setUserMoved: (move: number) => void;
+    setMatrixColor: (matrixColor: TileData[][] | undefined) => void;
     item: { color: number[], shined: boolean };
+    numOfDefaultSourceColor: number;
 }
 
 
 export default function Source(props: SourceProps) {
+    const { position, userMoved, matrixColor, setMatrixColor, setUserMoved, item, numOfDefaultSourceColor } = props;
     const handleClickSource = (sourceIndex: { x: number, y: number }) => {
-        const temp = [...props.matrixColor];
-        if (props.userMoved < numOfDefaultSourceColor && temp[sourceIndex.x][sourceIndex.y].shined !== true) { //ensure the player is within the first 3 clicks, and prevent the player from clicking the same source 3 times, which may damage the game flow for the player
+        const temp = [...matrixColor];
+        if (userMoved < numOfDefaultSourceColor && temp[sourceIndex.x][sourceIndex.y].shined !== true) { //ensure the player is within the first 3 clicks, and prevent the player from clicking the same source 3 times, which may damage the game flow for the player
             switch (props.userMoved) {
                 case 0:
                     temp[sourceIndex.x][sourceIndex.y] = { color: [255, 0, 0], shined: true };
@@ -29,8 +30,8 @@ export default function Source(props: SourceProps) {
                 default:
                     break;
             }
-            props.setMatrixColor(temp);
-            props.setUserMoved(props.userMoved + 1);
+            setMatrixColor(temp);
+            setUserMoved(userMoved + 1);
         }
     }
 
@@ -48,28 +49,27 @@ export default function Source(props: SourceProps) {
     };
 
     const setSources = (sourceIndex: { x: number, y: number }, color: number[]) => {
-        const temp = [...props.matrixColor];
+        const temp = [...matrixColor];
         const test = { ...temp[sourceIndex.x][sourceIndex.y] }
         test.color = color;
         test.shined = true;
         temp[sourceIndex.x][sourceIndex.y] = test;
-        props.setMatrixColor(temp);
-        props.setUserMoved(props.userMoved + 1);
+        setMatrixColor(temp);
+        setUserMoved(userMoved + 1);
     }
 
     return (
         <div
-            key={props.position.x + props.position.y + 'source'}
-            onClick={() => handleClickSource({ x: props.position.x, y: props.position.y })}
+            key={position.x + position.y + 'source'}
+            onClick={() => handleClickSource({ x: position.x, y: position.y })}
             className={styles.source}
             style={{
-                backgroundColor: `rgb(${props.item?.color.toString()})`,
-                cursor: props.userMoved < numOfDefaultSourceColor ? 'pointer' : 'auto' //change the clickable cursor to normal cursor, once the 3 click of sources are done
+                backgroundColor: `rgb(${item?.color.toString()})`,
+                cursor: userMoved < numOfDefaultSourceColor ? 'pointer' : 'auto' //change the clickable cursor to normal cursor, once the 3 click of sources are done
             }}
-            id={`source-${props.position.x}-${props.position.y}`}
             onDragOver={handleSourceDragOver}
-            onDrop={event => handleSourceDrop(event, props.position.x, props.position.y)}
-            data-testid={`source-${props.position.x}-${props.position.y}`}
+            onDrop={event => handleSourceDrop(event, position.x, position.y)}
+            data-testid={`source-${position.x}-${props.position.y}`}
         />
     )
 }
